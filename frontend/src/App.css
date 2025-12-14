@@ -1,0 +1,33 @@
+body {
+  font-family: system-ui, sans-serif;
+}
+
+.container {
+  max-width: 500px;
+  margin: 3rem auto;
+  text-align: center;
+}
+
+input {
+  padding: 0.5rem;
+  width: 70%;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  margin-left: 0.5rem;
+}
+
+.image-container {
+  margin-top: 2rem;
+}
+
+img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.error {
+  color: red;
+  margin-top: 1rem;
+}
