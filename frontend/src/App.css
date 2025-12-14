@@ -27,6 +27,15 @@ img {
   border-radius: 8px;
 }
 
+.loading-container {
+  margin-top: 2rem;
+}
+
+.loading-gif {
+  max-width: 200px;
+  height: auto;
+}
+
 .error {
   color: red;
   margin-top: 1rem;

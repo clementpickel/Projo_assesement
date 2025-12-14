@@ -16,6 +16,10 @@
 
     <div v-if="error" class="error">{{ error }}</div>
 
+    <div v-if="loading" class="loading-container">
+      <img src="./assets/Pixel 3D GIF by Loading Artist.gif" alt="Loading..." class="loading-gif" />
+    </div>
+
     <div v-if="imageUrl" class="image-container">
       <img :src="imageUrl" alt="Generated result" />
     </div>
