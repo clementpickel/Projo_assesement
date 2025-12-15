@@ -1,16 +1,94 @@
-Donc pour le rate limit a 30 par minutes il faudrait déjà déterminer si la minute est glissante ou si ça se reset à 00.
+# Gestion du rate limit (30 requêtes par minute)
 
-Pour les système qu'on peut implémenter:
+## Solutions architecturales envisageables
 
-1. Refaire leur API
-Pour le coup le word to image serait assez facile a refaire et on n'aurait plus ce problème.
-2. Avoir un système de cache
-On pourrait avoir un système de hashmap qui va prendre une image déjà généré dans les deux dernières heures ou moins selon le stockage.
-Avec l'api actuelle on devrait faire de la comparaison exacte car on voit le mot sur l'image mais si c'est un générateur d'image a partir d'un contexte on devrait utiliser une base de donnée vectorielle et trouver la phrase al plus proche.
-Il y a de grande chance pour qu'on ne trouve rien dans notre historique ou que le résultat prégénéré de convienne pas au client. Il faudrait donc marquer que l'image n'est pas complétement ce qu'ils ont demandé et leur donner la possibiliter d'aller directement dans la queue.
-3. Un système de queue
-Classic, mais on peut vendre des passe prioritaires
+### 1. Refaire l’API “Word-to-Image” en interne
 
-Dans
+Une première option serait de réimplémenter l’API de génération d’image.
 
-![alt text](part2/diagram.png)
+Dans le cas présent, un service *word-to-image* simple serait relativement facile à reproduire en interne, ce qui permettrait :
+
+* de supprimer totalement la dépendance à l’API externe,
+* d’éliminer le problème de rate limit,
+* de mieux contrôler les performances et les coûts.
+
+Cette solution demanderai  cependant plus de maintenance et des ressources de calcul.
+
+### 2. Mettre en place un système de cache
+
+Une autre solution consiste à introduire un **système de cache** côté backend.
+
+Par exemple :
+
+* un cache de type hashmap / Redis,
+* stockant les images générées sur les 2 dernières heures et les mots les plus fréquents.
+
+#### Cas simple (mot → image)
+
+Avec l’API actuelle, la comparaison doit être exacte (clé = mot), car le mot est le centre de l’image.
+
+#### Cas avancé (texte → image contextuel)
+
+Si l’API génère des images à partir d’un contexte plus complexe, une simple comparaison exacte ne suffit plus.
+Dans ce cas, on pourrait utiliser une base de données vectorielle et comparer les embeddings pour trouver la requête la plus proche sémantiquement.
+
+Il est possible qu’aucune image équivalente ne soit trouvée ou que l’image pré-générée peut ne pas correspondre exactement à la demande du client.
+
+Pour préserver l’UX, nous devrions indiquer clairement que l’image proposée est une approximation et de laisser la possibilité à l’utilisateur de forcer une génération personnalisée via la file d’attente.
+
+### 3. Mettre en place un système de queue
+
+La solution la plus classique et robuste consiste à utiliser un **système de file d’attente**.
+
+Principe :
+
+* les requêtes utilisateurs sont mises en queue,
+* un worker consomme la queue en respectant strictement la limite de **30 requêtes par minute** vers l’API externe.
+
+Avantages :
+
+* respect garanti du rate limit,
+* capacité à absorber les pics de trafic,
+* meilleure résilience globale.
+
+Amélioration UX / business :
+
+* proposer des **files prioritaires** (par exemple pour des utilisateurs premium),
+* afficher le **temps d’attente estimé**,
+* notifier l’utilisateur lorsque l’image est prête.
+
+### 4. Adapter le frontend
+
+Le frontend peut appliquer une limitation du nombre de requêtes par utilisateur, basée sur l’**adresse IP**. Cette devrait permettre de limiter les utilisateurs hardcore.
+
+Ensuite, des mécanismes de **throttling et de debounce** peuvent être mis en place :
+
+* désactiver temporairement le bouton de génération après un clic,
+* imposer un délai minimal entre deux requêtes,
+* empêcher les soumissions multiples rapides.
+
+
+Enfin, le frontend doit fournir un **feedback clair** à l’utilisateur :
+
+* indication visuelle lorsqu’une limite est atteinte,
+* message expliquant qu’un délai est nécessaire avant une nouvelle génération,
+* éventuellement un compte à rebours avant la prochaine requête autorisée.
+
+Cette approche devrait permettre de réduire significativement le trafic entrant, d’anticiper les abus, et de garantir une expérience utilisateur fluide pour tout les utilisateurs.
+
+## Conclusion
+
+Pour garantir la scalabilité tout en respectant le rate limit, mon architecture robuste combinerait idéalement :
+
+* **Un rate limiter interne**,
+* **Un cache** pour éviter les requêtes redondantes,
+* **Une queue** pour lisser la charge et absorber les pics,
+* **Une UI/UX adaptée** transparence et temps d'attente.
+
+À long terme, la réplique de l’API de génération permettrait d’éliminer complètement la contrainte de rate limit et d’offrir une meilleure maîtrise du système mais cela nécéssite que l'api soit assez simple.
+
+
+## Diagramme
+
+![diagram](diagram.png)
+
