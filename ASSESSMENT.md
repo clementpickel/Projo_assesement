@@ -1,102 +1,61 @@
-## Gestion du rate limit (30 requêtes par minute)
+# PROJO 
+# Software Engineer Internship Technical Assessment
 
-Avant toute chose, il est nécessaire de déterminer le type de rate limiting appliqué par l’API externe :
+## PART 1: CODE
 
-* soit une fenêtre glissante (30 requêtes sur les 60 dernières secondes),
-* soit une fenêtre fixe (reset à chaque minute pile, par exemple à `HH:MM:00`).
+You are tasked with developing a minimalist web application that integrates with an external service to generate an image.
+
+### Objective
+
+Create a **Minimal Viable Product (MVP) Text-to-Image Webapp** that allows a user to input a word and display the resulting generated image.
+
+### Instructions
+
+1.  **Implementation:** Build a minimalist web application featuring a text input form and a display area for the generated image.
+2.  **API Integration:** Your application must use the provided external API via your backend acting as a proxy.
+3.  **Delivery Requirements:**
+    * Commit your work to a Git repository and share it.
+    * Prepare a functional Docker configuration for deployment.
+
+### External "Word-to-Image" API Details
+
+Your Back-end must communicate with the following external service:
+
+| Description | Details |
+| :--- | :--- |
+| **Endpoint URL** | `REDACTED` |
+| **HTTP Request** | `GET /word-to-image` |
+| **Authentication Header** | `x-api-key = "REDACTED"` |
+| **Request Body** | JSON: `{"word": "your-value"}` |
+| **Response Body** | Raw Image Data |
+
+### Preferred Technology Stack
+
+* **Frontend:** Vue.js
+* **Backend:** ExpressJS
+
+The use of **TypeScript** is encouraged. 
+You are free to choose an alternative modern JavaScript framework if you are significantly more proficient with it.
 
 ---
 
-## Solutions architecturales envisageables
+## PART 2: SYSTEM DESIGN
 
-### 1. Refaire l’API “Word-to-Image” en interne
+**No code is required for this section.**
 
-Une première option serait de réimplémenter l’API de génération d’image.
+Now you have a working webapp, your success is on its way and your audience is growing.
+The external API must add a **strict rate limit of 30 requests per minute** to handle your load.
 
-Dans notre cas, un service *word-to-image* simple serait relativement facile à reproduire en interne, ce qui permettrait :
+### Instructions
 
-* d’éliminer le problème de rate limit,
-* de supprimer totalement la dépendance à l’API externe,
-* de mieux contrôler les performances et les coûts.
+Relying on your expertise, detail some architectural changes and components you would implement to enable the application to **scale** while guaranteeing the constraint is never violated.
 
-Cette solution demande cependant plus de maintenance et de ressources.
+Your response must propose solutions for:
 
+1.  Handling high user request volume.
+2.  Guaranteeing the external API rate limit is respected
+3.  Ensuring a good user experience.
 
-### 2. Mettre en place un système de cache
+Don't hesite to draw diagrams.
 
-Une autre solution consiste à introduire un **système de cache** côté backend.
-
-Par exemple :
-
-* un cache de type **hashmap / Redis**,
-* stockant les images générées sur les 1 à 2 dernières heures*(ou plus selon la capacité de stockage) et les mots les plus fréquents.
-
-#### Cas simple (mot → image)
-
-Avec l’API actuelle, la comparaison doit être exacte (clé = mot), car le mot est le centre de l’image.
-
-#### Cas avancé (texte → image contextuel)
-
-Si l’API génère des images à partir d’un contexte plus complexe, une simple comparaison exacte ne suffit plus.
-Dans ce cas, on pourrait utiliser une **base de données vectorielle** et comparer les embeddings pour trouver la requête la plus proche sémantiquement.
-
-Il est possible qu’aucune image équivalente ne soit trouvée ou que l’image pré-générée peut ne pas correspondre exactement à la demande du client.
-
-Pour préserver l’UX, il serait alors pertinent d’indiquer clairement que l’image proposée est une approximation et de laisser la possibilité à l’utilisateur de forcer une génération personnalisée via la file d’attente.
-
-
-### 3. Mettre en place un système de queue
-
-La solution la plus classique et robuste consiste à utiliser un système de file d’attente.
-
-Les requêtes utilisateurs sont mises en queue pendant qu'un worker consomme la queue en respectant strictement la limite de **30 requêtes par minute** vers l’API externe.
-
-Avantages :
-
-* respect garanti du rate limit,
-* capacité à absorber les pics de trafic,
-* meilleure résilience globale.
-
-Amélioration UX / business :
-
-* proposer des files prioritaires (par exemple pour des utilisateurs premium),
-* afficher le temps d’attente estimé,
-* notifier l’utilisateur lorsque l’image est prête.
-
-
-
-## 4. Adapter le frontend
-
-Le frontend peut appliquer une limitation du nombre de requêtes par utilisateur, basée sur l’adresse IP. Cela devrait d’empêcher 1% des utilisateur de faire 99% des requêtes.
-
-Ensuite, des mécanismes de throttling et de debounce peuvent être mis en place :
-
-* désactiver temporairement le bouton de génération après un clic,
-* imposer un délai minimal entre deux requêtes,
-* empêcher les soumissions multiples rapides.
-
-
-Le frontend doit fournir un feedback clair à l’utilisateur :
-
-* indication visuelle lorsqu’une limite est atteinte,
-* message expliquant qu’un délai est nécessaire avant une nouvelle génération,
-* éventuellement un compte à rebours avant la prochaine requête autorisée.
-
-Cette approche devrait permettre de réduire significativement le trafic entrant, d’anticiper les abus, et de garantir une expérience utilisateur fluide.
-
-## Conclusion
-
-Pour garantir la scalabilité tout en respectant le rate limit, mon architecture combinerait :
-
-* **Un rate limiter interne**,
-* **Un cache** pour éviter les requêtes redondantes,
-* **Une queue** pour lisser la charge et absorber les pics,
-* **Des limitation front** pour limiter les utilisateurs hardcore,
-* **Une UX adaptée** transparence et temps d'attente.
-
-À long terme, la copie de l’API de génération permettrait d’éliminer complètement la contrainte de rate limit et d’offrir une meilleure maîtrise du système mais cela n'est possible que si l'api est assez simple.
-
-## Diagramme
-
-![alt text](part2/image.png)
-
+**As a reminder, no code is required for this section.**

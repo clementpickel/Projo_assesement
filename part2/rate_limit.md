@@ -83,6 +83,7 @@ Pour garantir la scalabilité tout en respectant le rate limit, mon architecture
 * **Un rate limiter interne**,
 * **Un cache** pour éviter les requêtes redondantes,
 * **Une queue** pour lisser la charge et absorber les pics,
+* **Des limitation front** pour limiter les utilisateurs hardcore,
 * **Une UI/UX adaptée** transparence et temps d'attente.
 
 À long terme, la réplique de l’API de génération permettrait d’éliminer complètement la contrainte de rate limit et d’offrir une meilleure maîtrise du système mais cela nécéssite que l'api soit assez simple.
